@@ -15,7 +15,8 @@ backend/env.example # Example file is okay to copy if needed, but not the actual
 # Docker specific files
 Dockerfile*
 docker-compose.yml
-nginx.conf
+# Remove the line below to allow nginx.conf to be copied
+# nginx.conf
 
 # OS generated files
 .DS_Store
