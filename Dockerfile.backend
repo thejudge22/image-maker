@@ -1,0 +1,32 @@
+# Use an official Node.js runtime as a parent image (Alpine version for smaller size)
+FROM node:18-alpine AS builder
+
+# Set the working directory in the container
+WORKDIR /app/backend
+
+# Copy package.json and package-lock.json (if available)
+COPY backend/package*.json ./
+
+# Install app dependencies
+# Use --only=production to avoid installing devDependencies
+RUN npm install --only=production
+
+# Copy the rest of the backend application code
+COPY backend/ ./
+
+# --- Second Stage: Runtime Image ---
+FROM node:18-alpine
+
+WORKDIR /app/backend
+
+# Copy only necessary files from the builder stage
+COPY --from=builder /app/backend/node_modules ./node_modules
+COPY --from=builder /app/backend/package.json ./package.json
+COPY --from=builder /app/backend/server.js ./server.js
+# Ensure .env is NOT copied here; it will be mounted or injected via docker-compose
+
+# Make port 3000 available to the world outside this container (if needed directly, otherwise Nginx handles it)
+# EXPOSE 3000 # Port is defined by PORT env var, default 3000
+
+# Define the command to run your app using node
+CMD [ "node", "server.js" ]

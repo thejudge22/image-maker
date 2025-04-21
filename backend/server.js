@@ -40,38 +40,88 @@ app.use((req, res, next) => {
 
 // POST /api/generate - Endpoint to generate an image
 app.post('/api/generate', async (req, res) => {
-    const { prompt } = req.body;
+    // Destructure prompt and aspectRatio from the request body
+    const { prompt, aspectRatio } = req.body;
 
     if (!prompt) {
         return res.status(400).json({ success: false, error: 'Prompt is required.' });
     }
+    if (!imageModel) {
+        console.error("ERROR: IMAGE_MODEL is not set in the .env file.");
+        return res.status(500).json({ success: false, error: 'Image model configuration missing.' });
+    }
+    if (!apiKey) {
+        // This check is already done at startup, but good practice here too
+        console.error("ERROR: GEMINI_API_KEY is missing.");
+        return res.status(500).json({ success: false, error: 'API key configuration missing.' });
+    }
 
-    console.log(`Received generation request for prompt: "${prompt}"`);
+    console.log(`Received generation request for prompt: "${prompt}", Aspect Ratio: ${aspectRatio || 'default (1:1)'}`);
 
     try {
-        // --- TODO: Implement Google AI Imagen API Call ---
-        // 1. Construct the correct API endpoint URL for the specified imageModel.
-        // 2. Construct the request payload according to Google's Imagen API documentation.
-        //    This will likely include the prompt and potentially other parameters (e.g., aspect ratio, style presets).
-        // 3. Make the POST request using axios:
-        //    const response = await axios.post('GOOGLE_IMAGEN_API_ENDPOINT', { /* payload */ }, {
-        //        headers: {
-        //            'Authorization': `Bearer ${apiKey}`, // Or use 'x-goog-api-key' if required by the specific API
-        //            'Content-Type': 'application/json'
-        //        }
-        //    });
-        // 4. Process the response: Extract the image data (could be base64, a URL, etc.).
-        //    Check Google's API documentation for the response structure.
+        // Construct the API endpoint URL
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${imageModel}:predict?key=${apiKey}`;
 
-        console.log(`Placeholder: Simulating image generation for prompt: "${prompt}"`);
-        // Simulate a successful response for now
-        const simulatedImageData = `data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=`; // 1x1 black pixel PNG
+        // Construct the request payload
+        const payload = {
+            instances: [
+                { prompt: prompt }
+            ],
+            parameters: {
+                // Default to 1 image for simplicity in this example
+                sampleCount: 1,
+                // Include aspectRatio if provided, otherwise Google API uses its default (1:1)
+                ...(aspectRatio && { aspectRatio: aspectRatio }),
+                // Default personGeneration setting (can be made configurable later)
+                personGeneration: "ALLOW_ADULT"
+            }
+        };
 
-        res.json({ success: true, imageData: simulatedImageData }); // Replace with actual data
+        console.log("Sending request to Google Imagen API:", apiUrl);
+        // console.log("Payload:", JSON.stringify(payload, null, 2)); // Uncomment for debugging
+
+        // Make the POST request using axios
+        const response = await axios.post(apiUrl, payload, {
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        // --- Process the response ---
+        // IMPORTANT: Adjust the following lines based on the *actual* response structure
+        // from the Google Imagen API. This is a common pattern but might differ.
+        // Check Google's documentation for the exact structure.
+        if (response.data && response.data.predictions && response.data.predictions.length > 0 && response.data.predictions[0].bytesBase64Encoded) {
+            const base64ImageData = response.data.predictions[0].bytesBase64Encoded;
+            const imageDataUrl = `data:image/png;base64,${base64ImageData}`; // Assuming PNG format
+
+            console.log("Successfully received image data from API.");
+            res.json({ success: true, imageData: imageDataUrl });
+        } else {
+            console.error("Unexpected response structure from Google API:", response.data);
+            throw new Error('Invalid response format received from image generation API.');
+        }
 
     } catch (error) {
-        console.error("Error calling Google AI Image Generation API:", error.response ? error.response.data : error.message);
-        res.status(500).json({ success: false, error: 'Failed to generate image.' });
+        console.error("Error calling Google AI Image Generation API:");
+        if (error.response) {
+            // The request was made and the server responded with a status code
+            // that falls out of the range of 2xx
+            console.error("Status:", error.response.status);
+            console.error("Data:", error.response.data);
+            console.error("Headers:", error.response.headers);
+            // Try to extract a more specific error message from Google's response
+            const googleError = error.response.data?.error?.message || 'Failed to generate image due to API error.';
+            res.status(error.response.status || 500).json({ success: false, error: googleError });
+        } else if (error.request) {
+            // The request was made but no response was received
+            console.error("Request Error:", error.request);
+            res.status(500).json({ success: false, error: 'No response received from image generation service.' });
+        } else {
+            // Something happened in setting up the request that triggered an Error
+            console.error("Error:", error.message);
+            res.status(500).json({ success: false, error: 'Failed to generate image.' });
+        }
     }
 });
 

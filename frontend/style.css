@@ -25,6 +25,26 @@ h1, h2 {
     margin-bottom: 20px;
 }
 
+/* Add styling for form group elements like the aspect ratio selector */
+.form-group {
+    margin-bottom: 15px; /* Add space below the group */
+}
+
+.form-group label {
+    display: inline-block; /* Align label next to select */
+    margin-right: 10px;
+    margin-bottom: 0; /* Remove bottom margin if inline */
+    vertical-align: middle;
+}
+
+.form-group select {
+    padding: 8px 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    vertical-align: middle;
+    min-width: 150px; /* Give the select box some width */
+}
+
 label {
     display: block;
     margin-bottom: 5px;

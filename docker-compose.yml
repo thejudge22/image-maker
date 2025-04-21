@@ -1,0 +1,32 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: gemini_backend
+    restart: unless-stopped
+    env_file:
+      # Load environment variables from .env file located in the backend directory
+      # Make sure you create a .env file from env.example in the backend folder
+      - ./backend/.env
+    networks:
+      - gemini_net
+    # No ports exposed here, access is via the frontend proxy
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: gemini_frontend
+    restart: unless-stopped
+    ports:
+      # Map host port 8080 to container port 80 (Nginx)
+      - "25004:80"
+    depends_on:
+      - backend # Ensure backend starts before frontend (though Nginx will retry)
+    networks:
+      - gemini_net
+
+networks:
+  gemini_net:
+    driver: bridge # Default bridge network

@@ -13,6 +13,20 @@
         <div class="form-area">
             <label for="promptInput">Enter your image prompt:</label>
             <textarea id="promptInput" rows="4" placeholder="e.g., A photorealistic cat wearing sunglasses riding a skateboard"></textarea>
+
+            <!-- Add Aspect Ratio Selector -->
+            <div class="form-group">
+              <label for="aspectRatioSelect">Aspect Ratio:</label>
+              <select id="aspectRatioSelect">
+                <option value="1:1" selected>1:1 (Square)</option>
+                <option value="16:9">16:9 (Widescreen)</option>
+                <option value="9:16">9:16 (Tall)</option>
+                <option value="4:3">4:3 (Standard)</option>
+                <option value="3:4">3:4 (Portrait)</option>
+              </select>
+            </div>
+            <!-- End Aspect Ratio Selector -->
+
             <button id="generateButton">Generate Image</button>
         </div>
 

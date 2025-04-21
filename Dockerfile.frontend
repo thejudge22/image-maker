@@ -1,0 +1,17 @@
+# Use an official Nginx runtime as a parent image
+FROM nginx:1.25-alpine
+
+# Remove the default Nginx configuration file
+RUN rm /etc/nginx/conf.d/default.conf
+
+# Copy the custom Nginx configuration file from the config directory
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+# Copy the static assets from the frontend directory to the Nginx html directory
+COPY frontend/ /usr/share/nginx/html
+
+# Expose port 80 to the outside world
+EXPOSE 80
+
+# Start Nginx when the container launches
+CMD ["nginx", "-g", "daemon off;"]

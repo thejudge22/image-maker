@@ -10,6 +10,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const retryButton = document.getElementById('retryButton');
     const remixButton = document.getElementById('remixButton');
     const buttonControls = document.getElementById('buttonControls'); // Container for result buttons
+    // Add reference for the new aspect ratio select
+    const aspectRatioSelect = document.getElementById('aspectRatioSelect');
 
     // --- State ---
     let originalPrompt = '';
@@ -62,6 +64,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- API Call Functions ---
     async function generateImage() {
         const prompt = promptInput.value.trim();
+        // Get the selected aspect ratio
+        const aspectRatio = aspectRatioSelect.value;
+
         if (!prompt) {
             showError('Please enter a prompt.');
             return;
@@ -76,7 +81,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch('/api/generate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ prompt: prompt })
+                // Include both prompt and aspectRatio in the body
+                body: JSON.stringify({
+                    prompt: prompt,
+                    aspectRatio: aspectRatio
+                })
             });
 
             const data = await response.json();
