@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gemini Image Generator</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Gemini Image Generator</h1>
+
+        <div class="form-area">
+            <label for="promptInput">Enter your image prompt:</label>
+            <textarea id="promptInput" rows="4" placeholder="e.g., A photorealistic cat wearing sunglasses riding a skateboard"></textarea>
+            <button id="generateButton">Generate Image</button>
+        </div>
+
+        <div id="loadingIndicator" class="status-area" style="display: none;">
+            <div class="spinner"></div>
+            <span>Generating image... Please wait.</span>
+        </div>
+
+        <div id="errorArea" class="status-area error" style="display: none;">
+            <!-- Error messages will be inserted here -->
+        </div>
+
+        <div id="resultArea" style="display: none;">
+            <h2>Result</h2>
+            <div class="image-container">
+                <img id="generatedImage" src="" alt="Generated Image" />
+            </div>
+            <div id="buttonControls" class="button-group">
+                <button id="downloadButton">Download</button>
+                <button id="retryButton">Retry Prompt</button>
+                <button id="remixButton">Remix Prompt</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
