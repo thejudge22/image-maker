@@ -1,1 +1,13 @@
+# Node dependencies
+node_modules/
+
+# Environment variables
+.env
+
+# Log files
+*.log
+
+# OS generated files
+.DS_Store
+Thumbs.db
 implemention-plan.md
