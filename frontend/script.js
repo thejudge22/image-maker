@@ -107,16 +107,34 @@ document.addEventListener('DOMContentLoaded', () => {
         if (currentProvider === 'google') {
             optionsToRender = supportedAspectRatios.google;
         } else if (currentProvider === 'openai') {
-            optionsToRender = supportedAspectRatios.openai[currentOpenAIModel] || [];
+            // Ensure the selected OpenAI model exists in supportedAspectRatios
+            if (supportedAspectRatios.openai[currentOpenAIModel]) {
+                 optionsToRender = supportedAspectRatios.openai[currentOpenAIModel];
+            } else {
+                 console.warn(`Unsupported OpenAI model selected: ${currentOpenAIModel}. Falling back to default OpenAI options.`);
+                 // Fallback or display a message? For now, empty or default OpenAI list
+                 // You might want a more robust fallback here.
+                 optionsToRender = supportedAspectRatios.openai['dall-e-3'] || []; // Default to dall-e-3 options if model not found
+            }
         }
 
         // Populate dropdown with new options
-        optionsToRender.forEach(ratio => {
-            const option = document.createElement('option');
-            option.value = ratio.value;
-            option.textContent = ratio.text;
-            aspectRatioSelect.appendChild(option);
-        });
+        if (optionsToRender.length > 0) {
+             optionsToRender.forEach(ratio => {
+                const option = document.createElement('option');
+                option.value = ratio.value;
+                option.textContent = ratio.text;
+                aspectRatioSelect.appendChild(option);
+            });
+        } else {
+             // Add a default disabled option if no ratios are available
+             const option = document.createElement('option');
+             option.value = '';
+             option.textContent = 'No aspect ratios available';
+             option.disabled = true;
+             aspectRatioSelect.appendChild(option);
+        }
+
     }
 
     // --- API Call Functions ---

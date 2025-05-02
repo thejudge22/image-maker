@@ -130,33 +130,33 @@ app.post('/api/generate', async (req, res) => {
             }
 
             // --- OpenAI Image API Call Logic ---
-            let openaiApiUrl;
+            let openaiApiUrl = "https://api.openai.com/v1/images/generations"; // Corrected endpoint for all newer models
             let openaiPayload;
             const responseFormat = "b64_json"; // Request base64 data
 
-            // Determine endpoint and payload based on model
+            // Determine payload based on model
             if (openaiModel === 'dall-e-3') {
-                openaiApiUrl = "https://api.openai.com/v1/images/generations";
+                // Include response_format for DALL-E 3
                 openaiPayload = {
                     model: openaiModel,
                     prompt: prompt,
-                    size: aspectRatioToOpenAI(aspectRatio, openaiModel), // Use helper
+                    size: aspectRatioToOpenAI(aspectRatio, openaiModel),
                     n: 1,
                     response_format: responseFormat,
-                    quality: "standard" // Default quality for DALL-E 3
+                    quality: "standard"
                 };
-             } else if (openaiModel === 'gpt-image-1') {
-                openaiApiUrl = "https://api.openai.com/v1/images"; // Different endpoint for gpt-image-1
-                 openaiPayload = {
+            } else if (openaiModel === 'gpt-image-1') {
+                // For gpt-image-1, do not include response_format (API rejects it)
+                openaiPayload = {
+                    model: openaiModel,
                     prompt: prompt,
-                    size: aspectRatioToOpenAI(aspectRatio, openaiModel), // Use helper
+                    size: aspectRatioToOpenAI(aspectRatio, openaiModel),
                     n: 1,
-                    response_format: responseFormat,
-                    quality: "auto" // Default quality for gpt-image-1
-                }; // As per CURL, model is not explicitly in payload for gpt-image-1 endpoint.
-             } else {
-                 return res.status(400).json({ success: false, error: `Unsupported OpenAI model: ${openaiModel}` });
-             }
+                    quality: "auto"
+                };
+            } else {
+                return res.status(400).json({ success: false, error: `Unsupported OpenAI model: ${openaiModel}` });
+            }
 
             console.log("Sending request to OpenAI API:", openaiApiUrl, "with payload:", openaiPayload);
 
@@ -173,9 +173,9 @@ app.post('/api/generate', async (req, res) => {
                  imageDataUrl = `data:image/png;base64,${response.data.data[0].b64_json}`;
                  console.log("Successfully received image data from OpenAI API.");
             } else {
-                 console.error("Unexpected response structure from OpenAI API:");
-                 console.error(JSON.stringify(response.data, null, 2)); // Log the full response for debugging
-                 throw new Error('Invalid response format received from OpenAI image generation API.');
+                 console.error("Unexpected response structure from OpenAI API:", response.data);
+                 // Correcting the string literal with double quotes
+                 throw new Error("Invalid response format received from OpenAI image generation API.");
             }
 
         } else {
