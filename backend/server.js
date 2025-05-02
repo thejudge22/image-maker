@@ -136,35 +136,71 @@ app.post('/api/remix', async (req, res) => {
     console.log(`Received remix request for prompt: "${prompt}"`);
 
     try {
-        // --- TODO: Implement Google AI Text Generation API Call (for remixing) ---
-        // 1. Construct the correct API endpoint URL for the specified remixModel (e.g., Gemini).
-        // 2. Construct the request payload. This will involve the original prompt and instructions
-        //    for the model to rewrite or enhance it for image generation. Example payload structure:
-        //    {
-        //      "contents": [{
-        //        "parts": [{
-        //          "text": `Rewrite the following image prompt to be more descriptive and visually appealing, suitable for an AI image generator:\n\n"${prompt}"`
-        //        }]
-        //      }]
-        //      // Add generationConfig if needed (temperature, max tokens, etc.)
-        //    }
-        // 3. Make the POST request using axios to the Gemini API endpoint:
-        //    const response = await axios.post(`https://generativelanguage.googleapis.com/v1beta/models/${remixModel}:generateContent?key=${apiKey}`,
-        //       { /* payload */ },
-        //       { headers: { 'Content-Type': 'application/json' } }
-        //    );
-        // 4. Process the response: Extract the generated text (the remixed prompt).
-        //    Check Google's API documentation for the response structure (e.g., response.data.candidates[0].content.parts[0].text).
+        // Construct the API endpoint URL using the provided structure
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${remixModel}:generateContent?key=${apiKey}`;
 
-        console.log(`Placeholder: Simulating prompt remix for: "${prompt}"`);
-        // Simulate a successful response for now
-        const simulatedRemixedPrompt = `An enhanced, visually stunning version of: ${prompt}`;
+        // Construct the request payload using the provided structure
+        const payload = {
+            contents: [
+                {
+                    parts: [
+                        {
+                            text: `Rewrite the following image prompt to be more descriptive and visually appealing, suitable for an AI image generator, keeping the core subject matter:
 
-        res.json({ success: true, remixedPrompt: simulatedRemixedPrompt }); // Replace with actual data
+"${prompt}"`
+                        }
+                    ]
+                }
+            ]
+            // Optional: Add generationConfig if needed (temperature, max tokens, etc.)
+            // generationConfig: {
+            //     temperature: 0.7,
+            //     maxOutputTokens: 200,
+            // }
+        };
+
+        console.log("Sending remix request to Google Gemini API:", apiUrl);
+
+        // Make the POST request using axios
+        const response = await axios.post(apiUrl, payload, {
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        // --- Process the response ---
+        // Extract the generated text using the provided path: response.data.candidates[0].content.parts[0].text
+        if (response.data && response.data.candidates && response.data.candidates.length > 0 && response.data.candidates[0].content && response.data.candidates[0].content.parts && response.data.candidates[0].content.parts.length > 0 && response.data.candidates[0].content.parts[0].text) {
+            const remixedPrompt = response.data.candidates[0].content.parts[0].text;
+
+            console.log("Successfully received remixed prompt from API.");
+            res.json({ success: true, remixedPrompt: remixedPrompt });
+        } else {
+            console.error("Unexpected response structure from Google API (remix):");
+            console.error(JSON.stringify(response.data, null, 2)); // Log the full response for debugging
+            throw new Error('Invalid response format received from prompt remix API.');
+        }
 
     } catch (error) {
-        console.error("Error calling Google AI Text Generation API for remix:", error.response ? error.response.data : error.message);
-        res.status(500).json({ success: false, error: 'Failed to remix prompt.' });
+        console.error("Error calling Google AI Text Generation API for remix:");
+        if (error.response) {
+            // The request was made and the server responded with a status code
+            // that falls out of the range of 2xx
+            console.error("Status:", error.response.status);
+            console.error("Data:", error.response.data);
+            console.error("Headers:", error.response.headers);
+            // Try to extract a more specific error message from Google's response
+            const googleError = error.response.data?.error?.message || 'Failed to remix prompt due to API error.';
+            res.status(error.response.status || 500).json({ success: false, error: googleError });
+        } else if (error.request) {
+            // The request was made but no response was received
+            console.error("Request Error:", error.request);
+            res.status(500).json({ success: false, error: 'No response received from prompt remix service.' });
+        } else {
+            // Something happened in setting up the request that triggered an Error
+            console.error("Error:", error.message);
+            res.status(500).json({ success: false, error: 'Failed to remix prompt.' });
+        }
     }
 });
 

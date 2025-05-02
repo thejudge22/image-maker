@@ -88,6 +88,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 })
             });
 
+            // Check for specific HTTP status codes first
+            if (response.status === 429) {
+                throw new Error('Rate limit exceeded. Please wait a moment before trying again.');
+            }
+
             const data = await response.json();
 
             if (!response.ok || !data.success) {
@@ -119,6 +124,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ prompt: originalPrompt }) // Send the original prompt for remixing
             });
+
+            // Check for specific HTTP status codes first
+            if (response.status === 429) {
+                throw new Error('Rate limit exceeded. Please wait a moment before trying again.');
+            }
 
             const data = await response.json();
 
