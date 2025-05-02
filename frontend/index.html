@@ -14,6 +14,26 @@
             <label for="promptInput">Enter your image prompt:</label>
             <textarea id="promptInput" rows="4" placeholder="e.g., A photorealistic cat wearing sunglasses riding a skateboard"></textarea>
 
+            <!-- Add Provider Selection -->
+            <div class="form-group">
+              <label for="providerSelect">Image Provider:</label>
+              <select id="providerSelect">
+                <option value="google" selected>Google</option>
+                <option value="openai">OpenAI</option>
+              </select>
+            </div>
+            <!-- End Provider Selection -->
+
+            <!-- Add OpenAI Model Selection (Initially Hidden) -->
+            <div class="form-group" id="openaiModelGroup" style="display: none;">
+              <label for="openaiModelSelect">OpenAI Model:</label>
+              <select id="openaiModelSelect">
+                <option value="dall-e-3" selected>DALL-E 3</option>
+                <option value="gpt-image-1">GPT Image 1</option>
+              </select>
+            </div>
+            <!-- End OpenAI Model Selection -->
+
             <!-- Add Aspect Ratio Selector -->
             <div class="form-group">
               <label for="aspectRatioSelect">Aspect Ratio:</label>

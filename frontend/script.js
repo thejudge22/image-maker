@@ -10,12 +10,37 @@ document.addEventListener('DOMContentLoaded', () => {
     const retryButton = document.getElementById('retryButton');
     const remixButton = document.getElementById('remixButton');
     const buttonControls = document.getElementById('buttonControls'); // Container for result buttons
-    // Add reference for the new aspect ratio select
     const aspectRatioSelect = document.getElementById('aspectRatioSelect');
+    const providerSelect = document.getElementById('providerSelect'); // Added provider select
+    const openaiModelGroup = document.getElementById('openaiModelGroup'); // Added OpenAI model group div
+    const openaiModelSelect = document.getElementById('openaiModelSelect'); // Added OpenAI model select
 
     // --- State ---
     let originalPrompt = '';
     let currentImageData = null; // Store the image data (e.g., base64 URL)
+
+    // Define supported aspect ratios per provider/model
+    const supportedAspectRatios = {
+        google: [
+            { value: '1:1', text: '1:1 (Square)' },
+            { value: '16:9', text: '16:9 (Widescreen)' },
+            { value: '9:16', text: '9:16 (Tall)' },
+            { value: '4:3', text: '4:3 (Standard)' }, // Backend might map this, but include for completeness
+            { value: '3:4', text: '3:4 (Portrait)' } // Backend might map this, but include for completeness
+        ],
+        openai: {
+            'dall-e-3': [
+                { value: '1:1', text: '1:1 (Square - 1024x1024)' },
+                { value: '16:9', text: '16:9 (Widescreen - 1792x1024)' },
+                { value: '9:16', text: '9:16 (Tall - 1024x1792)' }
+            ],
+            'gpt-image-1': [
+                 { value: '1:1', text: '1:1 (Square - 1024x1024)' },
+                 { value: '16:9', text: '16:9 (Widescreen - 1536x1024)' },
+                 { value: '9:16', text: '9:16 (Tall - 1024x1536)' }
+            ]
+        }
+    };
 
     // --- UI State Functions ---
     function showLoading(isLoading, message = 'Generating image... Please wait.') {
@@ -28,9 +53,17 @@ document.addEventListener('DOMContentLoaded', () => {
             retryButton.disabled = true;
             remixButton.disabled = true;
             downloadButton.disabled = true;
+             // Disable provider and model selects during loading
+            providerSelect.disabled = true;
+            openaiModelSelect.disabled = true;
+
         } else {
             loadingIndicator.style.display = 'none';
             generateButton.disabled = false;
+             // Re-enable provider and model selects
+            providerSelect.disabled = false;
+            openaiModelSelect.disabled = false;
+
             // Re-enable result buttons only if there's a result visible
             const resultVisible = resultArea.style.display !== 'none';
             retryButton.disabled = !resultVisible;
@@ -61,16 +94,46 @@ document.addEventListener('DOMContentLoaded', () => {
         // Don't hide result area here, only on new generation/error
     }
 
+     // --- Aspect Ratio Control ---
+    function updateAspectRatioOptions() {
+        const currentProvider = providerSelect.value;
+        const currentOpenAIModel = openaiModelSelect.value;
+
+        // Clear existing options
+        aspectRatioSelect.innerHTML = '';
+
+        let optionsToRender = [];
+
+        if (currentProvider === 'google') {
+            optionsToRender = supportedAspectRatios.google;
+        } else if (currentProvider === 'openai') {
+            optionsToRender = supportedAspectRatios.openai[currentOpenAIModel] || [];
+        }
+
+        // Populate dropdown with new options
+        optionsToRender.forEach(ratio => {
+            const option = document.createElement('option');
+            option.value = ratio.value;
+            option.textContent = ratio.text;
+            aspectRatioSelect.appendChild(option);
+        });
+    }
+
     // --- API Call Functions ---
     async function generateImage() {
         const prompt = promptInput.value.trim();
-        // Get the selected aspect ratio
         const aspectRatio = aspectRatioSelect.value;
+        const selectedProvider = providerSelect.value; // Get selected provider
+        const selectedOpenAIModel = openaiModelSelect.value; // Get selected OpenAI model
 
         if (!prompt) {
             showError('Please enter a prompt.');
             return;
         }
+         if (selectedProvider === 'openai' && !selectedOpenAIModel) {
+             showError('Please select an OpenAI model.');
+             return;
+         }
 
         originalPrompt = prompt; // Store the prompt used for this generation
         clearStatus();
@@ -81,10 +144,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch('/api/generate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                // Include both prompt and aspectRatio in the body
+                // Include prompt, aspectRatio, provider, and openaiModel in the body
                 body: JSON.stringify({
                     prompt: prompt,
-                    aspectRatio: aspectRatio
+                    aspectRatio: aspectRatio,
+                    provider: selectedProvider,
+                    openaiModel: selectedProvider === 'openai' ? selectedOpenAIModel : undefined // Only include openaiModel if provider is openai
                 })
             });
 
@@ -110,6 +175,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function remixPrompt() {
+        // Note: Remix currently only supports Google's API
+        if (providerSelect.value !== 'google') {
+             showError('Remix is currently only supported for the Google provider.');
+             return;
+        }
+
         if (!originalPrompt) {
             showError('No prompt available to remix. Generate an image first or use the retry button.');
             return;
@@ -188,6 +259,23 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // Listen for changes on the provider select dropdown
+    providerSelect.addEventListener('change', (event) => {
+        if (event.target.value === 'openai') {
+            openaiModelGroup.style.display = 'block'; // Show OpenAI model select
+        } else {
+            openaiModelGroup.style.display = 'none'; // Hide OpenAI model select
+        }
+        // Update aspect ratio options when provider changes
+        updateAspectRatioOptions();
+    });
+
+     // Listen for changes on the OpenAI model select dropdown
+    openaiModelSelect.addEventListener('change', () => {
+         // Update aspect ratio options when OpenAI model changes (only relevant if provider is OpenAI)
+        updateAspectRatioOptions();
+    });
+
     // Optional: Allow pressing Enter in textarea to generate (Shift+Enter for newline)
     promptInput.addEventListener('keydown', (event) => {
         if (event.key === 'Enter' && !event.shiftKey) {
@@ -195,5 +283,13 @@ document.addEventListener('DOMContentLoaded', () => {
             generateButton.click(); // Trigger generation
         }
     });
+
+    // Initial state setup
+    // Hide OpenAI model select on load if Google is default
+    if (providerSelect.value !== 'openai') {
+         openaiModelGroup.style.display = 'none';
+    }
+    // Populate initial aspect ratio options based on default selection
+    updateAspectRatioOptions();
 
 });
